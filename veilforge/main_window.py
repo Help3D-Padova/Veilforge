@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import sys
 
 from PyQt6.QtCore import Qt, QSettings, QTimer, QPointF, QEvent, QUrl
 from PyQt6.QtGui import QImage, QGuiApplication, QColor, QIcon, QTransform, QDesktopServices, QPixmap
@@ -43,15 +44,57 @@ HELP_TEXT = (
 )
 
 class MainWindow(QMainWindow):
+
+    def _app_dir(self) -> Path:
+        """Return the base directory for portable builds.
+
+        - PyInstaller one-folder: folder containing the .exe
+        - PyInstaller one-file: sys._MEIPASS (temporary extraction dir)
+        - Source run: project root (two levels up from this file)
+        """
+        if getattr(sys, "frozen", False):
+            meipass = getattr(sys, "_MEIPASS", None)
+            if meipass:
+                return Path(meipass)
+            return Path(sys.executable).resolve().parent
+        return Path(__file__).resolve().parent.parent
+
+    def _default_sessions_dir(self) -> Path:
+        """Default sessions folder for portable builds."""
+        d = self._app_dir() / "data" / "sessions"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _make_portable_path(self, p: Path) -> str:
+        """Store paths relative to the app folder when possible (portable-friendly)."""
+        try:
+            base = self._app_dir().resolve()
+            rp = p.resolve()
+            rel = rp.relative_to(base)
+            return str(Path(".") / rel)
+        except Exception:
+            return str(p)
+
+    def _resolve_portable_path(self, p: str) -> Path:
+        """Resolve a stored path (relative to app dir if needed)."""
+        pp = Path(str(p))
+        if pp.is_absolute():
+            return pp
+        return (self._app_dir() / pp).resolve()
+        
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"Veilforge {__version__} – Fog of War")
         try:
-            self.setWindowIcon(QIcon(str(Path(__file__).resolve().parent.parent / "assets" / "veilforge.png")))
+            self.setWindowIcon(QIcon(str(self._app_dir() / "assets" / "veilforge.png")))
         except Exception:
             pass
 
-        self.settings = QSettings("HELP3D", "Veilforge")
+        # Portable-friendly settings (stored next to the app, not in Windows registry)
+        settings_path = self._app_dir() / "data" / "settings.ini"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        self.settings = QSettings(str(settings_path), QSettings.Format.IniFormat)
         self.ask_overwrite = self.settings.value("ask_overwrite", True, type=bool)
 
         # Recent sessions (most recent first)
@@ -412,7 +455,7 @@ class MainWindow(QMainWindow):
         self.cta_overlay.setVisible(self.map_img is None)
 
     def _update_window_title(self):
-        base = "Veilforge – Fog of War"
+        base = f"Veilforge {__version__} – Fog of War"
         try:
             if self.current_session_path is not None:
                 self.setWindowTitle(f"{base}  |  {self.current_session_path.name}")
@@ -474,7 +517,7 @@ class MainWindow(QMainWindow):
 
     def _add_recent_session(self, session_path: Path) -> None:
         try:
-            p = str(Path(session_path).resolve())
+            p = self._make_portable_path(Path(session_path))
         except Exception:
             p = str(session_path)
         items = [x for x in self._get_recent_sessions() if x and x != p]
@@ -495,7 +538,7 @@ class MainWindow(QMainWindow):
         last = None
         for s in items:
             try:
-                if Path(s).exists():
+                if self._resolve_portable_path(s).exists():
                     last = s
                     break
             except Exception:
@@ -507,7 +550,7 @@ class MainWindow(QMainWindow):
         box.setWindowTitle("Restore session?")
         box.setIcon(QMessageBox.Icon.Question)
         box.setText("I found a previous Veilforge session. Do you want to restore it?")
-        box.setInformativeText(f"Last session:\n{Path(last).name}")
+        box.setInformativeText(f"Last session:\n{self._resolve_portable_path(last).name}")
 
         btn_last = box.addButton("Load last", QMessageBox.ButtonRole.AcceptRole)
         btn_pick = box.addButton("Choose…", QMessageBox.ButtonRole.ActionRole)
@@ -523,7 +566,8 @@ class MainWindow(QMainWindow):
 
     def _load_session_path(self, path: str) -> None:
         try:
-            data = load_session(path)
+            path_res = str(self._resolve_portable_path(path))
+            data = load_session(path_res)
             self.loaded = load_map(data.map_path, pdf_page=data.pdf_page, pdf_dpi=data.pdf_dpi)
         except Exception as e:
             QMessageBox.critical(self, "Load error", f"Couldn't load session:\n{e}")
@@ -553,7 +597,7 @@ class MainWindow(QMainWindow):
             self.chk_grid_player.setChecked(bool(g.get("show_on_player", True)))
             self.on_grid_changed()
 
-        self.current_session_path = Path(path)
+        self.current_session_path = self._resolve_portable_path(path)
         self._add_recent_session(self.current_session_path)
         self._update_window_title()
         self.statusBar().showMessage(f"Session loaded: {self.current_session_path.name}", 2600)
@@ -569,7 +613,7 @@ class MainWindow(QMainWindow):
         existing, missing = [], []
         for s in items:
             try:
-                (existing if Path(s).exists() else missing).append(s)
+                (existing if self._resolve_portable_path(s).exists() else missing).append(s)
             except Exception:
                 missing.append(s)
 
@@ -625,7 +669,7 @@ class MainWindow(QMainWindow):
             pth = it.data(Qt.ItemDataRole.UserRole)
             if not pth:
                 return
-            if not Path(str(pth)).exists():
+            if not self._resolve_portable_path(str(pth)).exists():
                 QMessageBox.warning(dlg, "Missing", "That session file no longer exists.")
                 return
             dlg.accept()
@@ -636,7 +680,7 @@ class MainWindow(QMainWindow):
             self.load_session_dialog()
 
         def do_clean():
-            cleaned = [p for p in self._get_recent_sessions() if p and Path(p).exists()]
+            cleaned = [p for p in self._get_recent_sessions() if p and self._resolve_portable_path(p).exists()]
             self._save_recent_sessions(cleaned)
             QMessageBox.information(dlg, "Cleaned", "Missing entries removed. Re-open Recent to refresh.")
 
@@ -1158,26 +1202,21 @@ class MainWindow(QMainWindow):
         # ESC chiude
         dlg.setModal(True)
         dlg.exec()
-    
-
-    
     def _maybe_prompt_save_before_discard(self) -> bool:
+        """If a map/session is already loaded, ask to save before discarding it (e.g. Open Map).
+        Returns True to continue, False to abort.
         """
-        If a map/session is already loaded, ask the user whether to save before opening a new map.
-        Returns True to continue, False to abort the action.
-        """
-        # Nothing loaded → nothing to discard
         if self.map_img is None or self.loaded is None:
             return True
 
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Icon.Question)
         box.setWindowTitle("Save current session?")
-        box.setText("A map is already loaded.")
-        box.setInformativeText("Do you want to save the current session before opening a new map?")
+        box.setText("A map/session is already loaded.")
+        box.setInformativeText("Do you want to save the current session before continuing?")
 
         btn_save = box.addButton("Save", QMessageBox.ButtonRole.AcceptRole)
-        btn_no = box.addButton("Don't save", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Don't save", QMessageBox.ButtonRole.DestructiveRole)
         btn_cancel = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
         box.setDefaultButton(btn_save)
 
@@ -1187,13 +1226,40 @@ class MainWindow(QMainWindow):
         if clicked == btn_cancel:
             return False
         if clicked == btn_save:
-            # Save (quick if we have a path, otherwise Save As)
-            try:
-                self.save_session_quick()
-            except Exception:
-                # best-effort; don't brick Open Map
-                pass
+            # Safest: if save fails or user cancels Save As, abort the action.
+            if not self.save_session_quick():
+                return False
         return True
+
+    def _maybe_prompt_save_before_exit(self) -> bool:
+        """Ask to save before exiting if a map/session is loaded.
+        Safest behavior: if saving fails or is cancelled, abort exit.
+        Returns True to proceed with closing, False to abort.
+        """
+        if self.map_img is None or self.loaded is None:
+            return True
+
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle("Exit Veilforge")
+        box.setText("A map/session is currently loaded.")
+        box.setInformativeText("Do you want to save the current session before exiting?")
+
+        btn_save = box.addButton("Save", QMessageBox.ButtonRole.AcceptRole)
+        box.addButton("Don't save", QMessageBox.ButtonRole.DestructiveRole)
+        btn_cancel = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(btn_save)
+
+        box.exec()
+        clicked = box.clickedButton()
+
+        if clicked == btn_cancel:
+            return False
+        if clicked == btn_save:
+            if not self.save_session_quick():
+                return False
+        return True
+
 
 
 # ---------- Map ----------
@@ -1295,10 +1361,10 @@ class MainWindow(QMainWindow):
             self.settings.setValue("ask_overwrite", False)
         return res == QMessageBox.StandardButton.Yes
 
-    def _do_save_to(self, session_path: Path):
+    def _do_save_to(self, session_path: Path) -> bool:
         if not self.loaded or not self.map_img or self.canvas.mask_img is None:
             QMessageBox.information(self, "Nothing to save", "Load a map first.")
-            return
+            return False
 
         session_path = session_path.with_suffix(".json")
         mask_path = session_path.with_suffix(".mask.png")
@@ -1325,35 +1391,37 @@ class MainWindow(QMainWindow):
             save_session(str(session_path), data)
         except Exception as e:
             QMessageBox.critical(self, "Save error", f"Couldn't save session:\n{e}")
-            return
+            return False
         self.current_session_path = session_path
         self._add_recent_session(self.current_session_path)
         self._update_window_title()
         self.statusBar().showMessage(f"✅ Session saved: {session_path.name}", 3200)
 
-    def save_session_quick(self):
-        if self.current_session_path is None:
-            self.save_session_as_dialog()
-            return
-        if not self._confirm_overwrite_if_needed():
-            return
-        self._do_save_to(self.current_session_path)
+    
+        return True
 
-    def save_session_as_dialog(self):
+    def save_session_quick(self) -> bool:
+        if self.current_session_path is None:
+            return self.save_session_as_dialog()
+        if not self._confirm_overwrite_if_needed():
+            return False
+        return self._do_save_to(self.current_session_path)
+
+    def save_session_as_dialog(self) -> bool:
         if not self.loaded or not self.map_img:
             QMessageBox.information(self, "Nothing to save", "Load a map first.")
-            return
-        path, _ = QFileDialog.getSaveFileName(self, "Save Session As", "", "Veilforge session (*.json)")
+            return False
+        path, _ = QFileDialog.getSaveFileName(self, "Save Session As", str(self._default_sessions_dir()), "Veilforge session (*.json)")
         if not path:
-            return
+            return False
         sp = Path(path)
         if sp.exists() and self.ask_overwrite:
             if not self._confirm_overwrite_if_needed():
-                return
-        self._do_save_to(sp)
+                return False
+        return self._do_save_to(sp)
 
     def load_session_dialog(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Load Session", "", "Veilforge session (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, "Load Session", str(self._default_sessions_dir()), "Veilforge session (*.json)")
         if not path:
             return
         self._load_session_path(path)
@@ -1397,6 +1465,16 @@ class MainWindow(QMainWindow):
         self.update_player_view()
 
     def closeEvent(self, e):
+        # Ask to save before exiting (safest behavior)
+        try:
+            if not self._maybe_prompt_save_before_exit():
+                e.ignore()
+                return
+        except Exception:
+            # If something weird happens, do not risk data loss
+            e.ignore()
+            return
+
         try:
             self.player.close()
         except Exception:

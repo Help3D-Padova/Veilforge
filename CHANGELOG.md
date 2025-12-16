@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - In-app Help window with tabs: README, Credits, Use License
 - Donation UI: Donate button + QR code (in Help and DM toolbar)
 - Project version constant and window title version string
+- Added save confirmation on exit and before opening a new map
 
 ### Improved
 - Polished toolbar alignment (Player Screen + Donate)

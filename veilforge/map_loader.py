@@ -52,3 +52,14 @@ def load_map(path: str, pdf_page: int = 0, pdf_dpi: int = 150) -> LoadedMap:
         return LoadedMap(qimage=qimg, source_path=str(Path(path).resolve()), is_pdf=True, pdf_page=pdf_page, dpi=pdf_dpi)
     qimg = load_image(path)
     return LoadedMap(qimage=qimg, source_path=str(Path(path).resolve()), is_pdf=False)
+
+
+def resolve_user_path_portable(p: str) -> str:
+    """Return an absolute path for a user-provided path.
+    Keeps absolute paths; otherwise resolves relative to current working directory.
+    (Portable-friendly helper; safe no-op unless you call it.)
+    """
+    pp = Path(p)
+    if pp.is_absolute():
+        return str(pp)
+    return str((Path.cwd() / pp).resolve())
