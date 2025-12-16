@@ -671,7 +671,7 @@ class MainWindow(QMainWindow):
 
         # Load README.md from repo root (fallback to built-in HELP_TEXT)
         try:
-            readme_path = Path(__file__).resolve().parent.parent / "README.md"
+            readme_path = Path(__file__).resolve().parent.parent / "HELP_README.md"
             md = readme_path.read_text(encoding="utf-8")
             readme_box.setMarkdown(md)
         except Exception:
@@ -717,6 +717,18 @@ class MainWindow(QMainWindow):
         )
         donate_btn.clicked.connect(self.open_donate)
         sr.addWidget(donate_btn)
+
+        updates_btn = QPushButton("Look for updates")
+        updates_btn.setFixedHeight(34)
+        updates_btn.setToolTip("Open the Veilforge GitHub repository")
+        updates_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        updates_btn.setStyleSheet(
+            "QPushButton{background:#2d7dd2;color:white;border:none;border-radius:10px;padding:6px 12px;font-weight:800;font-size:14px;}"
+            "QPushButton:hover{background:#4a90e2;}"
+            "QPushButton:pressed{background:#1f66b3;}"
+        )
+        updates_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/Help3D-Padova/Veilforge")))
+        sr.addWidget(updates_btn)
 
         sr.addStretch(1)
         tr.addWidget(side, stretch=1)
