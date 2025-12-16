@@ -1,0 +1,3 @@
+PyQt6>=6.6
+pillow>=10.0
+pymupdf>=1.23

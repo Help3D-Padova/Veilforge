@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it."
+title: "Veilforge — Fog of War"
+authors:
+  - family-names: "Pirazzini"
+    given-names: "Andrea"
+  - family-names: "Vector"
+    given-names: "Kai"
+version: "2.6.0"
+license: "Veilforge Personal Use License (Attribution + Non-Commercial)"
