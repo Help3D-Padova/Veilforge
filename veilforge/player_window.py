@@ -160,31 +160,52 @@ class PlayerWindow(QWidget):
             p.end()
             return
 
-        target = QRectF(self.rect())        # draw map
+        target = QRectF(self.rect())
+
+        # draw map
         p.drawImage(target, self.map_img, src)
 
-        # draw grid (optional) — keep it UNDER the fog so it doesn't appear on blacked-out areas
+        # If src goes outside the image, Qt will draw only the intersecting part and leave black bars.
+        # Compute the *actual* on-screen rect covered by the map so we can clip grid/annotations to it.
+        img_bounds = QRectF(0.0, 0.0, float(self.map_img.width()), float(self.map_img.height()))
+        src_i = src.intersected(img_bounds)
+        if src_i.isNull():
+            p.end()
+            return
+
+        # Map src_i (map coords) to widget coords inside the full target rect.
+        sx = (src_i.left() - src.left()) / src.width()
+        sy = (src_i.top() - src.top()) / src.height()
+        sw = src_i.width() / src.width()
+        sh = src_i.height() / src.height()
+        map_target = QRectF(
+            target.left() + sx * target.width(),
+            target.top() + sy * target.height(),
+            sw * target.width(),
+            sh * target.height(),
+        )
+
+        # draw grid (optional) — clip to the visible map area (avoid grid on black bars)
         if self.show_grid and self.grid_type in ("Square", "Hex"):
             pen = QPen(QColor(255, 255, 255, self.grid_alpha), 1)
             p.setPen(pen)
+            p.save()
+            p.setClipRect(map_target.adjusted(2, 2, -2, -2))  # avoid edge leakage
             self._draw_grid(p, src)
+            p.restore()
 
-        # drawings/annotations — draw them BEFORE fog so fog hides them where it's still black
-        # (clip to map area so strokes don't spill into black bars)
+        # drawings/annotations — clip to visible map area
         if self.drawings:
             p.save()
-            p.setClipRect(target.adjusted(2, 2, -2, -2))  # avoid edge leakage
+            p.setClipRect(map_target.adjusted(2, 2, -2, -2))  # avoid edge leakage
             self._draw_strokes(p, src)
             p.restore()
 
-        # draw fog mask LAST (same src) so it covers both grid and annotations in fogged areas
+        # draw fog mask LAST (same src) so it covers grid + annotations in fogged areas
         if self.mask_img:
-            p.save()
-            p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
             p.drawImage(QRectF(self.rect()), self.mask_img, src)
-            p.restore()
-
         p.end()
+
     def _mx_to_wx(self, mx: float, src: QRectF) -> float:
         return (mx - src.left()) * (self.width() / src.width())
 
