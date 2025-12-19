@@ -722,11 +722,25 @@ class DMCanvas(QWidget):
         if self._player_overlay_vw <= 0 or self._player_overlay_vh <= 0:
             return None
 
+        # IMPORTANT:
+        # The PlayerWindow builds its source rect as:
+        #   view_w_map = widget_w_px / zoom
+        #   view_h_map = widget_h_px / zoom
+        # i.e. *no* extra "fit" factor.
+        #
+        # If we introduce a fit-to-map term here, the yellow DM overlay will drift
+        # (most noticeable when switching windowed <-> fullscreen, because the
+        # player widget aspect changes).
         mw, mh = float(self._map.width()), float(self._map.height())
-        fit = min(self._player_overlay_vw / mw, self._player_overlay_vh / mh) if mw and mh else 1.0
-        denom = max(1e-6, fit * float(self._player_overlay_zoom))
-        vis_w = self._player_overlay_vw / denom
-        vis_h = self._player_overlay_vh / denom
+        denom = max(1e-6, float(self._player_overlay_zoom))
+        vis_w = float(self._player_overlay_vw) / denom
+        vis_h = float(self._player_overlay_vh) / denom
+
+        # If the player's viewport is larger than the map in either dimension,
+        # the player will effectively see the whole map with black bars.
+        # Represent that truthfully on the DM overlay.
+        if vis_w >= mw or vis_h >= mh:
+            return QRectF(0.0, 0.0, mw, mh)
 
         cx = float(self._player_overlay_center.x())
         cy = float(self._player_overlay_center.y())
