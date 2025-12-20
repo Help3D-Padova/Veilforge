@@ -4,8 +4,8 @@ Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal 
 
 > **Donate inside the app:** open **Help → README** to find the Donate panel (QR + button).
 
-<img width="1478" height="946" alt="image" src="https://github.com/user-attachments/assets/8eead83b-0fef-471d-9f55-9824966289e4" />
-<img width="1532" height="895" alt="image" src="https://github.com/user-attachments/assets/5fc9bcc2-0e3b-4a8d-bbd5-1ebd40ad8538" />
+[![Youtube Video](https://github.com/user-attachments/assets/4ebbe18a-2930-40af-b22f-c4077cb5ab57)](https://youtu.be/GsCzD6jOgKM)
+
 
 ## Features
 
@@ -40,6 +40,8 @@ The grid is meant to match the map’s grid (or your physical table grid).
 - **Grid size** changes the cell size (pixels per square).
 - **Grid offset X/Y** moves the grid to match the map lines.
 - **Grid alpha** controls transparency (higher = more visible).
+
+<img width="1478" height="946" alt="image" src="https://github.com/user-attachments/assets/8eead83b-0fef-471d-9f55-9824966289e4" />
 
 **Workflow tip**
 1. Set a rough grid size first.
@@ -95,6 +97,8 @@ Use this when you want to clean or adjust a small part of a drawing.
 - **CTRL + click** on **Delete annotation** → deletes **ALL annotations** (with confirmation)
 
 Use this when you want to quickly undo the last drawing or reset all annotations at once.
+
+<img width="1532" height="895" alt="image" src="https://github.com/user-attachments/assets/5fc9bcc2-0e3b-4a8d-bbd5-1ebd40ad8538" />
 
 
 ### Delete annotation button
