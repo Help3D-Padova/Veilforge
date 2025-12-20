@@ -4,7 +4,7 @@ Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal 
 
 > **Donate inside the app:** open **Help → README** to find the Donate panel (QR + button).
 
-[![Youtube Video](https://github.com/user-attachments/assets/4ebbe18a-2930-40af-b22f-c4077cb5ab57)](https://youtu.be/GsCzD6jOgKM)
+[![Youtube Video](https://github.com/user-attachments/assets/4ebbe18a-2930-40af-b22f-c4077cb5ab57)](https://youtu.be/o7xHNwLNQTg)
 
 
 ## Features
