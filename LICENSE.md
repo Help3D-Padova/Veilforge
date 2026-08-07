@@ -2,6 +2,7 @@
 
 Copyright (c) 2025 Andrea Pirazzini.
 Additional contributions: Kai Vector (AI co-dev).
+Version 2.7.0 was made by Cedric Dagobert in July 2026 from Visual Studio Code and its AI Copilot.
 
 ## 1) Grant of rights
 Permission is granted to any person obtaining a copy of this software and associated source code (the “Software”) to:

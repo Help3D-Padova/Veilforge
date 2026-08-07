@@ -13,6 +13,8 @@ Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal 
 - **Player Screen** output (second monitor / projector, fullscreen)
 - **Grid overlay** with adjustable size, offset and alpha
 - **Annotations** (draw on top) with brush size + alpha + color picker
+- **Video/audio support**: open `.mp4`, `.webm`, `.mkv`, `.m4a` files for playback on the DM canvas and player screen
+- **Tokens**: import token images, then move/resize/rotate them on the DM map
 - **FOV / Cone tools** (visual field templates)
 - **Undo / Redo**, save/load sessions
 
@@ -22,6 +24,26 @@ Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal 
 2. Select the **Target screen** (your projector / second monitor) from the dropdown.
 3. Click **Player Screen: ON** to enable the player view (use **Fullscreen** if desired).
 4. Use **Fog brush** to reveal areas while you narrate.
+
+## Video / Audio maps
+
+- You can now open video or audio files directly as the map source.
+- Supported formats include **MP4**, **WEBM**, **MKV**, and **M4A**.
+- When a video file is loaded, playback starts automatically and loops on the DM canvas and player screen.
+
+### Video playback limitations and stability notes
+
+- Very heavy videos (notably **4K** and/or high bitrate files) can saturate decode/render resources on some PCs.
+- In these cases, Windows can temporarily mark the app as **"Not responding"**.
+
+Built-in mitigations:
+- Heavy-video detection with user warning (size + 4K hints, and codec/resolution metadata when available).
+- Automatic **lite render profile** (lower frame processing load + stronger display downscale).
+- **VP9 4K** streams force lite profile automatically.
+- For every detected heavy video, Veilforge attempts a local **1080p cached transcode** when `ffmpeg` is available.
+
+Best practice:
+- Prefer 1080p assets for long sessions, or prepare a lighter version of very large video maps.
 
 ## Projector / Second Screen calibration
 
@@ -56,6 +78,39 @@ Fog is a mask over the map. The brush edits the mask.
 - **Brush alpha/strength** (if present): how strongly you reveal/hide per stroke.
 - Use **Undo Fog / Redo Fog** for quick corrections.
 - **Reset Fog** returns the whole map to fully fogged (or default mask state).
+
+## DM zoom navigation (Master screen)
+
+- Use the **mouse wheel** to zoom on the DM map.
+- Use **middle mouse drag** to pan inside the zoomed image.
+- When zoom level is above 100% and movement is possible, Veilforge shows:
+  - a **horizontal scrollbar** at the bottom
+  - a **vertical scrollbar** on the right
+- Those bars let the DM move quickly through the zoomed map area.
+
+## Tokens
+
+Tokens are image markers placed on top of the map (creatures, NPCs, props, effects).
+
+- Click **Import Token** to load a `.png` / `.jpg` token image.
+- New tokens are placed near the center of the current map.
+- Enable **Token tool** to manipulate tokens on the DM canvas:
+  - Drag token body: move
+  - Blue handle icon (top-right): resize
+  - Orange handle icon (above token): rotate
+- Right-click a selected token to open the context menu:
+  - **Rotate** / **Resize**
+  - **Copy** / **Paste** / **Delete**
+  - **Duplicate** / **Bring to Front** / **Send to Back**
+- Keyboard shortcuts for tokens:
+  - **Ctrl + C**: copy selected token
+  - **Ctrl + V**: paste copied token
+- Press **Delete** or **Backspace** to remove the selected token.
+- Tokens are synchronized to the **Player** window.
+- On the Player side, tokens stay hidden under fogged areas (fog is drawn above tokens).
+
+Important behavior:
+- When **Token tool** is ON, the DM fog brush is intentionally disabled (including brush preview) to prevent accidental fog edits.
 
 ## FOV (Field of View) tools
 
@@ -113,7 +168,13 @@ Use this when you want to quickly undo the last drawing or reset all annotations
   - fog mask
   - grid settings
   - annotations
+  - tokens (image, position, size, rotation)
   - other view settings
+
+Missing file recovery:
+- On **Load Session**, if map/media path is not found, Veilforge first searches in the session file folder.
+- If still missing, a file picker asks you to locate the required file.
+- Once selected, the new location is remembered for future loads.
 
 Use **Load Session** to resume later exactly where you left off.
 
@@ -126,6 +187,7 @@ Use **Load Session** to resume later exactly where you left off.
 
 - **Andrea Pirazzini** — main developer
 - **Kai Vector** — AI co-dev (design + implementation support)
+- **Cedric Dagobert** — AI co-dev (v2.7.0)
 
 ## Use License (Non-commercial)
 

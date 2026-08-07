@@ -13,6 +13,7 @@ class SessionData:
     map_rotation_deg: int = 0
     mask_path: str = ""
     drawings: list[dict[str, Any]] = field(default_factory=list)
+    tokens: list[dict[str, Any]] = field(default_factory=list)
     grid: dict[str, Any] = field(default_factory=dict)
 
 def save_session(path: str, data: SessionData) -> None:
@@ -21,5 +22,6 @@ def save_session(path: str, data: SessionData) -> None:
 def load_session(path: str) -> SessionData:
     obj = json.loads(Path(path).read_text(encoding="utf-8"))
     obj.setdefault("drawings", [])
+    obj.setdefault("tokens", [])
     obj.setdefault("grid", {})
     return SessionData(**obj)

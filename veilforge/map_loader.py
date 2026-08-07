@@ -8,35 +8,39 @@ from PyQt6.QtGui import QImage
 
 @dataclass
 class LoadedMap:
-    qimage: QImage
-    source_path: str
+    qimage: QImage = None
+    source_path: str = ""
     is_pdf: bool = False
     pdf_page: int = 0
     dpi: int = 150
+    is_video: bool = False  # Ajout d'un attribut pour savoir si c'est une vidéo
 
 def pil_to_qimage(im: Image.Image) -> QImage:
+    # Convertit une image PIL en QImage  
     if im.mode not in ("RGBA", "RGB"):
         im = im.convert("RGBA")
     if im.mode == "RGB":
-        w, h = im.size
+        w, h = im.size  
         data = im.tobytes("raw", "RGB")
-        return QImage(data, w, h, 3*w, QImage.Format.Format_RGB888).copy()
-    w, h = im.size
+        return QImage(data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+    w, h = im.size  
     data = im.tobytes("raw", "RGBA")
-    return QImage(data, w, h, 4*w, QImage.Format.Format_RGBA8888).copy()
+    return QImage(data, w, h, 4 * w, QImage.Format.Format_RGBA8888).copy()
 
 def load_image(path: str) -> QImage:
+    # Charge une image à partir du chemin spécifié  
     im = Image.open(path)
     try:
-        from PIL import ImageOps
-        im = ImageOps.exif_transpose(im)
+        from PIL import ImageOps  
+        im = ImageOps.exif_transpose(im)  # Corrige l'orientation de l'image  
     except Exception:
-        pass
+        pass  
     return pil_to_qimage(im)
 
 def render_pdf_page(path: str, page_index: int = 0, dpi: int = 150) -> QImage:
+    # Rendu d'une page PDF en tant que QImage
     doc = fitz.open(path)
-    page_index = max(0, min(page_index, len(doc)-1))
+    page_index = max(0, min(page_index, len(doc) - 1))
     page = doc.load_page(page_index)
     zoom = dpi / 72.0
     mat = fitz.Matrix(zoom, zoom)
@@ -45,19 +49,30 @@ def render_pdf_page(path: str, page_index: int = 0, dpi: int = 150) -> QImage:
     doc.close()
     return q
 
+
 def load_map(path: str, pdf_page: int = 0, pdf_dpi: int = 150) -> LoadedMap:
-    ext = Path(path).suffix.lower()
+    # Charge une carte (image/PDF/vidéo/audio) selon son type
+    #
+    # Pour les vidéos et les fichiers audio, nous ne rendons pas d'image de
+    # prévisualisation. L'appelant doit ouvrir le flux média via QMediaPlayer
+    # en utilisant `LoadedMap.source_path`.
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"Map file not found: {path}")
+    ext = p.suffix.lower()
+    video_exts = {".mp4", ".webm", ".m4a", ".mkv", ".mov", ".avi", ".flv", ".m2ts", ".ts", ".3gp"}
     if ext == ".pdf":
         qimg = render_pdf_page(path, pdf_page, pdf_dpi)
-        return LoadedMap(qimage=qimg, source_path=str(Path(path).resolve()), is_pdf=True, pdf_page=pdf_page, dpi=pdf_dpi)
+        return LoadedMap(qimage=qimg, source_path=str(p.resolve()), is_pdf=True, pdf_page=pdf_page, dpi=pdf_dpi)
+    elif ext in video_exts:
+        return LoadedMap(source_path=str(p.resolve()), is_video=True)
     qimg = load_image(path)
-    return LoadedMap(qimage=qimg, source_path=str(Path(path).resolve()), is_pdf=False)
-
+    return LoadedMap(qimage=qimg, source_path=str(p.resolve()), is_pdf=False)
 
 def resolve_user_path_portable(p: str) -> str:
-    """Return an absolute path for a user-provided path.
-    Keeps absolute paths; otherwise resolves relative to current working directory.
-    (Portable-friendly helper; safe no-op unless you call it.)
+    """Retourne un chemin absolu pour un chemin fourni par l'utilisateur.
+    Garde les chemins absolus ; sinon, résout par rapport au répertoire de travail actuel.
+    (Fonction d'aide portable ; opération sûre sauf si vous l'appelez.)
     """
     pp = Path(p)
     if pp.is_absolute():
