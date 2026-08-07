@@ -1,11 +1,12 @@
+This is the in-app help.
+For screenshots and videos, visit the GitHub repository.
+
+
 # Veilforge — Fog of War (DM Tool)
 
 Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal a map progressively (“fog of war”), project it to a second screen for players, and add quick annotations on top.
 
 > **Donate inside the app:** open **Help → README** to find the Donate panel (QR + button).
-
-[![Youtube Video](https://github.com/user-attachments/assets/4ebbe18a-2930-40af-b22f-c4077cb5ab57)](https://youtu.be/o7xHNwLNQTg)
-
 
 ## Features
 
@@ -30,20 +31,21 @@ Veilforge is a lightweight desktop tool for tabletop RPGs that lets a DM reveal 
 - You can now open video or audio files directly as the map source.
 - Supported formats include **MP4**, **WEBM**, **MKV**, and **M4A**.
 - When a video file is loaded, playback starts automatically and loops on the DM canvas and player screen.
+- **Grid on video** is supported: if Grid is enabled, the overlay is drawn on video for both **DM** and **Player** views.
 
 ### Video playback limitations and stability notes
 
-- Very heavy videos (notably **4K** and/or high bitrate files) can saturate decode/render resources on some PCs.
-- In these cases, Windows can temporarily mark the app as **"Not responding"**.
+- Very heavy videos (especially **4K** and/or high bitrate files) can overload some systems and cause UI stalls.
+- If this happens, Windows may briefly show **"Not responding"** while decoding catches up.
 
-Built-in mitigations:
-- Heavy-video detection with user warning (size + 4K hints, and codec/resolution metadata when available).
-- Automatic **lite render profile** (lower frame processing load + stronger display downscale).
+Veilforge mitigation behavior:
+- Detects likely heavy files and shows an informational warning (size + 4K hints, and codec/resolution metadata when available).
+- Automatically enables a **lite playback profile** (reduced frame processing and stronger downscale).
 - **VP9 4K** streams force lite profile automatically.
-- For every detected heavy video, Veilforge attempts a local **1080p cached transcode** when `ffmpeg` is available.
+- If **ffmpeg** is available on the machine, Veilforge attempts to build and reuse a local **1080p cache** copy for every detected heavy video.
 
-Best practice:
-- Prefer 1080p assets for long sessions, or prepare a lighter version of very large video maps.
+Practical recommendation:
+- For best reliability on modest hardware, prefer 1080p sources or pre-encoded lighter versions of very large maps.
 
 ## Projector / Second Screen calibration
 
@@ -63,7 +65,10 @@ The grid is meant to match the map’s grid (or your physical table grid).
 - **Grid offset X/Y** moves the grid to match the map lines.
 - **Grid alpha** controls transparency (higher = more visible).
 
-<img width="1478" height="946" alt="image" src="https://github.com/user-attachments/assets/8eead83b-0fef-471d-9f55-9824966289e4" />
+Behavior note:
+- When **Grid** is enabled (checkbox), the **Type** will default to **Square** if it was left as **None**. This ensures a sensible default grid is applied when toggling the grid on.
+- In **video mode**, the grid is rendered as an overlay in both windows (DM and Player).
+- **Show on Player** still controls whether the player window displays the grid.
 
 **Workflow tip**
 1. Set a rough grid size first.
@@ -153,8 +158,6 @@ Use this when you want to clean or adjust a small part of a drawing.
 
 Use this when you want to quickly undo the last drawing or reset all annotations at once.
 
-<img width="1532" height="895" alt="image" src="https://github.com/user-attachments/assets/5fc9bcc2-0e3b-4a8d-bbd5-1ebd40ad8538" />
-
 
 ### Delete annotation button
 
@@ -187,7 +190,6 @@ Use **Load Session** to resume later exactly where you left off.
 
 - **Andrea Pirazzini** — main developer
 - **Kai Vector** — AI co-dev (design + implementation support)
-- **Cedric Dagobert** — AI co-dev (v2.7.0)
 
 ## Use License (Non-commercial)
 
